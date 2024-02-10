@@ -10,7 +10,12 @@ import { NgIf } from '@angular/common';
 import { Firestore } from '@angular/fire/firestore';
 import { addDoc, collection } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
+import localForage from 'localforage';
 
+localForage.config({
+  name: 'miPWA',
+  storeName: 'imagenes_pendientes',
+});
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -30,6 +35,7 @@ export class AppComponent implements OnInit {
 
   constructor(private firestore: Firestore) {
     // Inicializa Firebase
+    this.cargarImagenesPendientes();
   }
 
   public async ngOnInit(): Promise<void> {
@@ -68,12 +74,31 @@ export class AppComponent implements OnInit {
   }
 
   async syncPendingImages(): Promise<void> {
+    console.log('Sincronizando imágenes pendientes...');
     while (this.pendingImages.length > 0) {
       const imageBlob = this.pendingImages.shift(); // Obtener y remover la imagen de la cola
       if (imageBlob) {
         await this.uploadAndStoreImage(imageBlob);
         console.log('Imagen sincronizada con Firebase');
       }
+    }
+    localForage.clear();
+  }
+
+  async agregarImagenPendiente(blob: Blob): Promise<void> {
+    this.pendingImages.push(blob);
+    await this.guardarImagenesPendientes();
+  }
+
+  async guardarImagenesPendientes(): Promise<void> {
+    await localForage.setItem('pendingImages', this.pendingImages);
+  }
+
+  async cargarImagenesPendientes(): Promise<void> {
+    const imagenes = await localForage.getItem<Blob[]>('pendingImages');
+    console.log('Imagenes pendientes', imagenes);
+    if (imagenes) {
+      this.pendingImages = imagenes;
     }
   }
 
@@ -124,6 +149,9 @@ export class AppComponent implements OnInit {
       // Asigna el stream obtenido al elemento de vídeo
       if (this.videoElement.nativeElement) {
         this.videoElement.nativeElement.srcObject = this.cameraStream;
+        this.videoElement.nativeElement.width = 400;
+        this.videoElement.nativeElement.height = 500;
+        console.log('Video', this.videoElement.nativeElement);
       }
     } catch (error) {
       console.error('Error accessing the camera:', error);
@@ -155,6 +183,8 @@ export class AppComponent implements OnInit {
       const canvas = document.createElement('canvas');
       canvas.width = this.videoElement.nativeElement.videoWidth;
       canvas.height = this.videoElement.nativeElement.videoHeight;
+      console.log('Canvas', canvas);
+      console.log('alto ancho', canvas.width, canvas.height);
       const context = canvas.getContext('2d');
       context?.drawImage(
         this.videoElement.nativeElement,
@@ -168,12 +198,7 @@ export class AppComponent implements OnInit {
       const blob = await (await fetch(this.imageSrc)).blob();
 
       if (!navigator.onLine) {
-        this.pendingImages.push(blob);
-        console.log(
-          this.pendingImages,
-          'Añadido a la cola de imágenes pendientes'
-        );
-        console.log('Añadido a la cola de imágenes pendientes');
+        this.agregarImagenPendiente(blob);
       } else {
         await this.uploadAndStoreImage(blob);
       }
