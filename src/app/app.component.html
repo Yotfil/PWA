@@ -2,5 +2,6 @@
 <img *ngIf="imageSrc" [src]="imageSrc" alt="Foto capturada">
 <button *ngIf="!imageSrc" (click)="capturePhoto()">Capturar Foto</button>
 <button *ngIf="imageSrc" (click)="retakePhoto()">Tomar Nuevamente</button>
+<button (click)="switchCamera()">Cambiar Cámara</button>
 <!-- <h1>Hello world</h1> -->
 <router-outlet></router-outlet>

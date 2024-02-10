@@ -17,11 +17,15 @@ export class AppComponent implements OnInit {
   imageSrc: string | null = null;
   cameraStream: MediaStream | null = null;
   pendingImages: Blob[] = [];
+  cameras: MediaDeviceInfo[] = [];
+  currentCameraIndex: number = 0;
+
   constructor(private firestore: Firestore) {
     // Inicializa Firebase
   }
 
   public async ngOnInit(): Promise<void> {
+    await this.detectCameras();
     await this.startCamera(); // Asegúrate de que esta línea esté comentada si no estás usando la cámara aquí
 
     try {
@@ -35,6 +39,20 @@ export class AppComponent implements OnInit {
     }
 
     window.addEventListener('online', () => this.syncPendingImages());
+  }
+
+  async detectCameras(): Promise<void> {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    this.cameras = devices.filter((device) => device.kind === 'videoinput');
+  }
+
+  async switchCamera(): Promise<void> {
+    if (this.cameras.length > 1) {
+      this.currentCameraIndex =
+        (this.currentCameraIndex + 1) % this.cameras.length; // Cambiar al siguiente índice de cámara
+      this.stopCameraStream(); // Detener el stream actual antes de cambiar
+      await this.startCamera(); // Iniciar el nuevo stream de cámara
+    }
   }
 
   async syncPendingImages(): Promise<void> {
@@ -69,14 +87,22 @@ export class AppComponent implements OnInit {
   }
 
   async startCamera(): Promise<void> {
+    if (this.cameras.length === 0) return;
+    const cameraId = this.cameras[this.currentCameraIndex].deviceId;
     try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        this.cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
-        if (this.videoElement.nativeElement) {
-          this.videoElement.nativeElement.srcObject = this.cameraStream;
-        }
+      // if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      //   this.cameraStream = await navigator.mediaDevices.getUserMedia({
+      //     video: true,
+      //   });
+      //   if (this.videoElement.nativeElement) {
+      //     this.videoElement.nativeElement.srcObject = this.cameraStream;
+      //   }
+      // }
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: cameraId ? { exact: cameraId } : undefined },
+      });
+      if (this.videoElement.nativeElement) {
+        this.videoElement.nativeElement.srcObject = this.cameraStream;
       }
     } catch (error) {
       console.error('Error accessing the camera:', error);
