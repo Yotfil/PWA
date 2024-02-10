@@ -142,8 +142,8 @@ export class AppComponent implements OnInit {
       // Asigna el stream obtenido al elemento de vídeo
       if (this.videoElement.nativeElement) {
         this.videoElement.nativeElement.srcObject = this.cameraStream;
-        // this.videoElement.nativeElement.width = 400;
-        // this.videoElement.nativeElement.height = 500;
+        this.videoElement.nativeElement.width = 400;
+        this.videoElement.nativeElement.height = 400;
       }
     } catch (error) {
       console.error('Error accessing the camera:', error);
@@ -173,8 +173,8 @@ export class AppComponent implements OnInit {
   async capturePhoto(): Promise<void> {
     if (this.cameraStream && this.videoElement.nativeElement) {
       const canvas = document.createElement('canvas');
-      canvas.width = this.videoElement.nativeElement.videoWidth;
-      canvas.height = this.videoElement.nativeElement.videoHeight;
+      canvas.width = 400;
+      canvas.height = 400;
       console.log('Canvas', canvas);
       console.log('alto ancho', canvas.width, canvas.height);
       const context = canvas.getContext('2d');
