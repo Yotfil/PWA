@@ -1,4 +1,10 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { Firestore } from '@angular/fire/firestore';
@@ -19,6 +25,8 @@ export class AppComponent implements OnInit {
   pendingImages: Blob[] = [];
   cameras: MediaDeviceInfo[] = [];
   currentCameraIndex: number = 0;
+  deferredPrompt: any;
+  showInstallButton: boolean = false;
 
   constructor(private firestore: Firestore) {
     // Inicializa Firebase
@@ -63,6 +71,16 @@ export class AppComponent implements OnInit {
         console.log('Imagen sincronizada con Firebase');
       }
     }
+  }
+
+  @HostListener('window:beforeinstallprompt', ['$event'])
+  onBeforeInstallPrompt(e: Event) {
+    // Evita que el mini-infobar aparezca en móviles
+    e.preventDefault();
+    // Guarda el evento para que pueda ser activado más tarde
+    this.deferredPrompt = e;
+    // Actualiza la propiedad para mostrar el botón de instalación
+    this.showInstallButton = true;
   }
 
   async uploadImage(imageBlob: Blob): Promise<string> {
@@ -151,5 +169,22 @@ export class AppComponent implements OnInit {
       this.cameraStream.getTracks().forEach((track) => track.stop());
       this.cameraStream = null;
     }
+  }
+
+  async installPWA(): Promise<void> {
+    if (!this.deferredPrompt) return;
+
+    // Muestra el prompt de instalación
+    this.deferredPrompt.prompt();
+    // Espera a que el usuario responda al prompt
+    const { outcome } = await this.deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('El usuario aceptó la instalación de la PWA');
+    } else {
+      console.log('El usuario rechazó la instalación de la PWA');
+    }
+    // Borra la referencia al evento ya que solo se puede usar una vez
+    this.deferredPrompt = null;
+    this.showInstallButton = false;
   }
 }
