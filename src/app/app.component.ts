@@ -33,7 +33,7 @@ export class AppComponent implements OnInit {
   }
 
   public async ngOnInit(): Promise<void> {
-    await this.detectCameras();
+    // await this.detectCameras();
     await this.startCamera(); // Asegúrate de que esta línea esté comentada si no estás usando la cámara aquí
 
     try {
@@ -52,6 +52,10 @@ export class AppComponent implements OnInit {
   async detectCameras(): Promise<void> {
     const devices = await navigator.mediaDevices.enumerateDevices();
     this.cameras = devices.filter((device) => device.kind === 'videoinput');
+    console.log('Navigator', navigator);
+    navigator.mediaDevices.enumerateDevices().then((devices) => {
+      console.log('Devices', devices);
+    });
   }
 
   async switchCamera(): Promise<void> {
@@ -106,26 +110,44 @@ export class AppComponent implements OnInit {
   }
 
   async startCamera(): Promise<void> {
-    if (this.cameras.length === 0) return;
-    const cameraId = this.cameras[this.currentCameraIndex].deviceId;
     try {
-      // if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      //   this.cameraStream = await navigator.mediaDevices.getUserMedia({
-      //     video: true,
-      //   });
-      //   if (this.videoElement.nativeElement) {
-      //     this.videoElement.nativeElement.srcObject = this.cameraStream;
-      //   }
-      // }
-      this.cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: cameraId ? { exact: cameraId } : undefined },
-      });
+      // Define las constraints para solicitar la cámara trasera
+      const constraints = {
+        video: { facingMode: 'environment' },
+      };
+
+      // Solicita el acceso a los medios con las constraints especificadas
+      this.cameraStream = await navigator.mediaDevices.getUserMedia(
+        constraints
+      );
+
+      // Asigna el stream obtenido al elemento de vídeo
       if (this.videoElement.nativeElement) {
         this.videoElement.nativeElement.srcObject = this.cameraStream;
       }
     } catch (error) {
       console.error('Error accessing the camera:', error);
     }
+    // if (this.cameras.length === 0) return;
+    // const cameraId = this.cameras[this.currentCameraIndex].deviceId;
+    // try {
+    //   // if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    //   //   this.cameraStream = await navigator.mediaDevices.getUserMedia({
+    //   //     video: true,
+    //   //   });
+    //   //   if (this.videoElement.nativeElement) {
+    //   //     this.videoElement.nativeElement.srcObject = this.cameraStream;
+    //   //   }
+    //   // }
+    //   this.cameraStream = await navigator.mediaDevices.getUserMedia({
+    //     video: { deviceId: cameraId ? { exact: cameraId } : undefined },
+    //   });
+    //   if (this.videoElement.nativeElement) {
+    //     this.videoElement.nativeElement.srcObject = this.cameraStream;
+    //   }
+    // } catch (error) {
+    //   console.error('Error accessing the camera:', error);
+    // }
   }
 
   async capturePhoto(): Promise<void> {
