@@ -1,9 +1,16 @@
-<video *ngIf="!imageSrc" #videoElement autoplay muted playsinline></video>
-<img *ngIf="imageSrc" [src]="imageSrc" alt="Foto capturada">
-<button *ngIf="!imageSrc" (click)="capturePhoto()">Capturar Foto</button>
-<button *ngIf="imageSrc" (click)="retakePhoto()">Tomar Nuevamente</button>
-<button (click)="switchCamera()">Cambiar Cámara</button>
-<button (click)="installPWA()">Instalar PWA</button>
+<div class="container-main">
+  <div class="container-media">
+    <video *ngIf="!imageSrc" #videoElement autoplay muted playsinline></video>
+    <img *ngIf="imageSrc" [src]="imageSrc" alt="Foto capturada">
+  </div>
+  <div class="container-btns">
+    <button *ngIf="!imageSrc" (click)="capturePhoto()" class="btn">Capturar Foto</button>
+    <button *ngIf="imageSrc" (click)="retakePhoto()" class="btn">Tomar Nuevamente</button>
+    <button (click)="installPWA()" class="btn">Instalar PWA</button>
+  </div>
+</div>
+
+<!-- <button (click)="switchCamera()">Cambiar Cámara</button> -->
 
 <!-- <h1>Hello world</h1> -->
 <router-outlet></router-outlet>

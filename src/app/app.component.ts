@@ -41,17 +41,9 @@ export class AppComponent implements OnInit {
   public async ngOnInit(): Promise<void> {
     // await this.detectCameras();
     await this.startCamera(); // Asegúrate de que esta línea esté comentada si no estás usando la cámara aquí
-
-    try {
-      const testCollection = collection(this.firestore, 'testing');
-      const docRef = await addDoc(testCollection, {
-        text: 'i love fire base again',
-      });
-      console.log('Document written with Id: ', docRef.id);
-    } catch (e) {
-      console.error('Error adding document: ', e);
+    if (navigator.onLine && this.pendingImages.length > 0) {
+      await this.syncPendingImages();
     }
-
     window.addEventListener('online', () => this.syncPendingImages());
   }
 
@@ -131,6 +123,7 @@ export class AppComponent implements OnInit {
       createdAt: new Date(),
     });
 
+    await localForage.setItem('pendingImages', this.pendingImages); // Guardar la cola actualizada
     console.log('Imagen almacenada con ID:', imageRef.id);
   }
 
@@ -149,9 +142,8 @@ export class AppComponent implements OnInit {
       // Asigna el stream obtenido al elemento de vídeo
       if (this.videoElement.nativeElement) {
         this.videoElement.nativeElement.srcObject = this.cameraStream;
-        this.videoElement.nativeElement.width = 400;
-        this.videoElement.nativeElement.height = 500;
-        console.log('Video', this.videoElement.nativeElement);
+        // this.videoElement.nativeElement.width = 400;
+        // this.videoElement.nativeElement.height = 500;
       }
     } catch (error) {
       console.error('Error accessing the camera:', error);
