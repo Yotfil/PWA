@@ -3,7 +3,7 @@
 <button *ngIf="!imageSrc" (click)="capturePhoto()">Capturar Foto</button>
 <button *ngIf="imageSrc" (click)="retakePhoto()">Tomar Nuevamente</button>
 <button (click)="switchCamera()">Cambiar Cámara</button>
-<button *ngIf="showInstallButton" (click)="installPWA()">Instalar PWA</button>
+<button (click)="installPWA()">Instalar PWA</button>
 
 <!-- <h1>Hello world</h1> -->
 <router-outlet></router-outlet>

@@ -75,8 +75,9 @@ export class AppComponent implements OnInit {
 
   @HostListener('window:beforeinstallprompt', ['$event'])
   onBeforeInstallPrompt(e: Event) {
+    console.log('Evento de instalación recibido', e);
     // Evita que el mini-infobar aparezca en móviles
-    e.preventDefault();
+    // e.preventDefault();
     // Guarda el evento para que pueda ser activado más tarde
     this.deferredPrompt = e;
     // Actualiza la propiedad para mostrar el botón de instalación
@@ -172,7 +173,7 @@ export class AppComponent implements OnInit {
   }
 
   async installPWA(): Promise<void> {
-    if (!this.deferredPrompt) return;
+    // if (!this.deferredPrompt) return;
 
     // Muestra el prompt de instalación
     this.deferredPrompt.prompt();
