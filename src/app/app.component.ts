@@ -1,8 +1,9 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NgIf } from '@angular/common';
-import { AngularFireStorage } from '@angular/fire/compat/storage';
-import { finalize } from 'rxjs';
+import { Firestore } from '@angular/fire/firestore';
+import { addDoc, collection } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes, getStorage } from 'firebase/storage';
 
 @Component({
   selector: 'app-root',
@@ -11,17 +12,60 @@ import { finalize } from 'rxjs';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   imageSrc: string | null = null;
   cameraStream: MediaStream | null = null;
-
-  constructor(private storage: AngularFireStorage) {
-    // Puedes usar `storage` aquí o en otros métodos de tu componente
+  pendingImages: Blob[] = [];
+  constructor(private firestore: Firestore) {
+    // Inicializa Firebase
   }
 
-  async ngOnInit(): Promise<void> {
-    await this.startCamera();
+  public async ngOnInit(): Promise<void> {
+    await this.startCamera(); // Asegúrate de que esta línea esté comentada si no estás usando la cámara aquí
+
+    try {
+      const testCollection = collection(this.firestore, 'testing');
+      const docRef = await addDoc(testCollection, {
+        text: 'i love fire base again',
+      });
+      console.log('Document written with Id: ', docRef.id);
+    } catch (e) {
+      console.error('Error adding document: ', e);
+    }
+
+    window.addEventListener('online', () => this.syncPendingImages());
+  }
+
+  async syncPendingImages(): Promise<void> {
+    while (this.pendingImages.length > 0) {
+      const imageBlob = this.pendingImages.shift(); // Obtener y remover la imagen de la cola
+      if (imageBlob) {
+        await this.uploadAndStoreImage(imageBlob);
+        console.log('Imagen sincronizada con Firebase');
+      }
+    }
+  }
+
+  async uploadImage(imageBlob: Blob): Promise<string> {
+    const storage = getStorage();
+    const storageRef = ref(storage, 'images/' + new Date().getTime());
+    await uploadBytes(storageRef, imageBlob);
+    return await getDownloadURL(storageRef);
+  }
+
+  async uploadAndStoreImage(blob: Blob): Promise<void> {
+    const imageUrl = await this.uploadImage(blob); // La función de subida existente
+    // Guardar referencia de la imagen en Firestore, lógica existente...
+    // const imageUrl = await this.uploadImage(blob); // Asume que uploadImage es un método en este componente o en un servicio inyectado que sube la imagen y devuelve la URL
+
+    // Guardar referencia de la imagen en Firestore
+    const imageRef = await addDoc(collection(this.firestore, 'images'), {
+      url: imageUrl,
+      createdAt: new Date(),
+    });
+
+    console.log('Imagen almacenada con ID:', imageRef.id);
   }
 
   async startCamera(): Promise<void> {
@@ -54,45 +98,26 @@ export class AppComponent {
       );
 
       this.imageSrc = canvas.toDataURL('image/jpeg');
-      this.stopCameraStream();
+      const blob = await (await fetch(this.imageSrc)).blob();
 
-      // Convertir dataURL a Blob
-      const photoBlob = await fetch(this.imageSrc).then((res) => res.blob());
-
-      // Generar un nombre único para el archivo
-      const photoName = `photo_${Date.now()}.jpg`;
-
-      if (navigator.onLine) {
-        // Si está online, subir la foto a Firebase Storage
-        const photoRef = this.storage.ref(photoName);
-        const uploadTask = photoRef.put(photoBlob);
-
-        uploadTask
-          .snapshotChanges()
-          .pipe(
-            // Utiliza `finalize` para ejecutar una acción después de que la tarea de subida se haya completado
-            finalize(async () => {
-              // Obtén la URL de descarga
-              const photoURL = await photoRef.getDownloadURL().toPromise();
-              console.log('Foto subida con URL:', photoURL);
-              // Aquí puedes guardar la URL de la foto en Firestore o en otro lugar si necesitas.
-            })
-          )
-          .subscribe();
+      if (!navigator.onLine) {
+        this.pendingImages.push(blob);
+        console.log(
+          this.pendingImages,
+          'Añadido a la cola de imágenes pendientes'
+        );
+        console.log('Añadido a la cola de imágenes pendientes');
       } else {
-        // Si está offline, guardar la foto en IndexedDB para sincronizar más tarde
-        // Necesitarás implementar una función para guardar y recuperar de IndexedDB.
-        // this.savePhotoOffline(photoBlob);
-        console.log('No se puede subir la foto porque está offline');
+        await this.uploadAndStoreImage(blob);
       }
+
+      this.stopCameraStream();
     }
   }
 
   async retakePhoto(): Promise<void> {
     this.imageSrc = null;
-    // if (this.cameraStream) {
     await this.startCamera();
-    // }
   }
 
   stopCameraStream(): void {
