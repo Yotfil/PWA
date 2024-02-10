@@ -11,7 +11,12 @@
           "/index.html",
           "/manifest.webmanifest",
           "/*.css",
-          "/*.js"
+          "/*.js",
+          "/*.(eot|ttf|woff|woff2)",
+          "/assets/icons/Home_icono.svg",
+          "/assets/icons/Icono_Modo Offline.svg",
+          "/assets/i18n/en.json",
+          "/assets/i18n/es.json"
         ]
       }
     },
